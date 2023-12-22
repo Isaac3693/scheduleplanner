@@ -1,0 +1,15 @@
+DATE:9/23/2023
+9:30-12:20:enter name
+12:20-14:30:another name
+::END::
+DATE:9/24/2023
+9:30-12:30:enter_name
+12:30-20:40:andaoiniodsaniodnsajndsia
+::END::
+DATE:10/13/2023
+6:00-7:30:make breakfast
+7:30-8:00:meditate
+8:00-14:20:school
+14:20-17:00:gym
+22:00-23:59:sleep
+::END:: 
