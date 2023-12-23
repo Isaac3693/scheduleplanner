@@ -40,7 +40,6 @@ save //Appends the date to the list and then goes back to the main menu.
 */
 
 
-
 int make_schedule(scheduled_days list, int *day) {
     //How would I pass the date that the user has putted? 
     //ASSUME THAT DAY HAS 3 ELEMENTS IN THE ARRAY, NOTHING MORE, NOTHING LESS.
@@ -86,7 +85,7 @@ int make_schedule(scheduled_days list, int *day) {
             if (timeslot_args->argc != 4) {printf("insufficient arguments\n");}
 
             //Super duper long statements make my day
-            else if (((time_start = parse_input_return_time(timeslot_args->argv[1], strlen(timeslot_args->argv[1]))) == NULL) || (time_end = parse_input_return_time(timeslot_args->argv[2], strlen(timeslot_args->argv[2])) == NULL)) printf("Unable to make times from given input\n");
+            else if (((time_start = parse_input_return_time(timeslot_args->argv[1], strlen(timeslot_args->argv[1]))) == NULL) || ((time_end = parse_input_return_time(timeslot_args->argv[2], strlen(timeslot_args->argv[2]))) == NULL)) printf("Unable to make times from given input\n");
 
             //Normal execution, everything is normal and we can append the timeslot to the list.
             else if (!date_append_timeslot_to_date(current_date, timeslot_create_timeslot(time_start[0], time_start[1], time_end[0], time_end[1], timeslot_args->argv[3], strlen(timeslot_args->argv[3])))) printf("Timeslot added\n");
@@ -135,7 +134,7 @@ int edit_schedule(scheduled_days list, date current_date) {
     //Now we have a day that we are working on and we are ready to add it to the list.
 
     while (1) {
-        printf("(Create Schedule for %d/%d/%d)", current_date->month, current_date->day, current_date->year);
+        printf("(Edit Schedule for %d/%d/%d)", current_date->month, current_date->day, current_date->year);
         fgets(user_input, BUFFER_SIZE, stdin);
         user_input[strlen(user_input) - 1] - '\0';
         if ((timeslot_args = c_arg(user_input, strlen(user_input))) == NULL) {printf("Incorrect arg format\n"); destroy_args(timeslot_args); continue;}
@@ -158,7 +157,7 @@ int edit_schedule(scheduled_days list, date current_date) {
             if (timeslot_args->argc != 4) {printf("insufficient arguments\n");}
 
             //Super duper long statements make my day
-            else if (((time_start = parse_input_return_time(timeslot_args->argv[1], strlen(timeslot_args->argv[1]))) == NULL) || (time_end = parse_input_return_time(timeslot_args->argv[2], strlen(timeslot_args->argv[2])) == NULL)) printf("Unable to make times from given input\n");
+            else if (((time_start = parse_input_return_time(timeslot_args->argv[1], strlen(timeslot_args->argv[1]))) == NULL) || ((time_end = parse_input_return_time(timeslot_args->argv[2], strlen(timeslot_args->argv[2]))) == NULL)) printf("Unable to make times from given input\n");
 
             //Normal execution, everything is normal and we can append the timeslot to the list.
             else if (!date_append_timeslot_to_date(current_date, timeslot_create_timeslot(time_start[0], time_start[1], time_end[0], time_end[1], timeslot_args->argv[3], strlen(timeslot_args->argv[3])))) printf("Timeslot added\n");
@@ -188,14 +187,15 @@ int edit_schedule(scheduled_days list, date current_date) {
 
     //in case that I didn't look into the control flow, I should do a print statement here and put a return 0 over here
 
-    printf("MAKESCHEDULE FUNCTION FLOW WENT HERE\n");
+    printf("EDITSCHEDULE FUNCTION FLOW WENT HERE\n");
     return 0;
 
 
 
 }
 
-
+//Issue, there is a problem with checking the content of strncpy, we have to assume that the user is not stupid enough to put the right info
+//TODO: TEST THIS PROGRAM AND OBSERVE BEHAVIOUR IN CASE THE USER PUTS THE WRONG FORMAT FOR THE TIME.
 int *parse_input_return_time(char *input, size_t len) {
     //Most often has the input --:-- (wait, it's that easy?)
 
@@ -203,16 +203,37 @@ int *parse_input_return_time(char *input, size_t len) {
     if ((time_arr = (int*)malloc(sizeof(int) * 2)) == NULL) return NULL;
     char copier[MAX_NAME_LENGTH];
     for (int i = 0; i < len; i++) if (input[i] == ':') {
-        if ((time_arr[0] = atoi(strncpy(copier, input, i))) == NULL) {free(time_arr); return NULL;}
-        if ((time_arr[1] = atoi(strcpy(copier, (input + i + 1)))) == NULL) {free(time_arr); return NULL;}
+
+        time_arr[0] = atoi(strncpy(copier, input, i));
+        time_arr[1] = atoi(strcpy(copier, (input + i + 1)));
+
+        if (!has_correct_time_format(time_arr)) {free(time_arr); return NULL;}
+
         return time_arr;
     }
 
     return NULL;
 }
 
+bool has_correct_time_format(int *time_arr) {
+    return ((time_arr[0] > 0) && (time_arr[0] < 24) && (time_arr[1] > 0) && (time_arr[1] < 60));
+}
+
+//Fortunately for the user, nothing is stopping them from scheduling a day that is in the year INT_MAX, meaning that if they live for an extremely long time (assuming we can now put our brains in immortal mechanical machines, which is highly unprobabilistic), they can make a time capsule in the form of a schedule...
+bool has_correct_date_format(int *date_arr) {
+    return((date_arr[0] > 0) && (date_arr[0] < 13) && (date_arr[1] > 0) && (date_arr[1] < 32) && (date_arr[2] > 0));
+}
+
+
+/*
+
+SUPPOSED LOGICAL ERROR FOR THIS FUNCTION:
+  It is hard to implement an algorithm that checks if a specific day exists for that year, meaning that the 
+  user can put any date in between 0 & 31 for any month (for example, February 31st, which is not possible). I also leave this to the reader as an exercise.
+
+*/
 int *parse_input_return_date(char *input, size_t len) {
-    //Must be of string "--/--/----" (day/month/year)
+    //Must be of string "--/--/----" (month/day/year)
 
     int *date_arr;
     if ((date_arr = (int*)malloc(sizeof(int) * 3)) == NULL) return NULL;
@@ -222,15 +243,14 @@ int *parse_input_return_date(char *input, size_t len) {
             slash_counter++;
             switch (slash_counter) {
                 case(1):
-                    if ((date_arr[0] = atoi(strncpy(copier, input, i))) == NULL) {free(date_arr); return NULL;}
+                    date_arr[0] = atoi(strncpy(copier, input, i));
                     break;
                 case(2):
-                    if ((date_arr[1] = atoi(strncpy(copier, (input + previous_slash_index + 1), i - (previous_slash_index - 1)))) == NULL) {free(date_arr); return NULL;}
+                    date_arr[1] = atoi(strncpy(copier, (input + previous_slash_index + 1), i - (previous_slash_index - 1)));
                     previous_slash_index = i;
-                    if ((date_arr[2] = atoi(strcpy(copier, (input + i + 1)))) == NULL) {free(date_arr); return NULL;}
+                    date_arr[2] = atoi(strcpy(copier, (input + i + 1)));
+                    if (!has_correct_date_format(date_arr)) {free(date_arr); return NULL;}
                     return date_arr;
-                    break; //But what's the point in putting this break since the flow of the program goes out? 
-
             }
 
             previous_slash_index = i; //In case that the iteration has reached the second slash to make the second switch case work
@@ -238,6 +258,7 @@ int *parse_input_return_date(char *input, size_t len) {
     }
 
     //In case that there is a failure to append the string, return NULL
+    return NULL;
 }
 
 void print_time(struct tm *time_struct) {
@@ -257,4 +278,54 @@ int *make_date_arr(struct tm *time_struct) {
 
     return tmp;
 
+}
+
+//I need a helper function that compares the dates and sees which one comes before, after, or the same date
+//For the implementation with the main program, today will be current_date and the user_inputted date will be selected_date.
+enum date_comparison_state current_date_comparison_with_selected_date(int *current_date, int *selected_date) {
+    //remember that the format of the arrays are {month, day, year}
+    //We are comparing whether current_date comes before, after or is the same as selected date
+    if (selected_date[2] < current_date[2]) return AFTER;
+    else if (selected_date[2] > current_date[2]) return BEFORE;
+    else {
+        //The condition such that the years are the same and now we have to compare the months of the two arrays
+        if (selected_date[0] < current_date[0]) return AFTER;
+        else if (selected_date[0] > current_date[0]) return BEFORE;
+        else {
+            //The months are the same and we have to check the comparison using the days
+            if (selected_date[1] < current_date[1]) return AFTER;
+            else if (selected_date[1] > current_date[1]) return BEFORE;
+            else return SAME;
+        }
+    }
+}
+
+void print_help(void) {
+    PRINT_DASHES;
+    puts("schedule <date>");
+    printf("\tCreates or modifies a schedule for the user date.\n");
+    puts("delete <date>");
+    printf("\tDeletes a date that is on the list\n");
+    puts("print <date (optional)>");
+    printf("\tPrints a selected date to see the contents. If <date> is omitted, by default prints the schedule for today if it exists\n");
+    puts("quit");
+    printf("exits the program\n");
+}
+
+void print_edit_schedule_help(void) {
+    PRINT_DASHES;
+    puts("print");
+    printf("\tprints the schedule for the date\n");
+    puts("make_timeslot <time_start> <time_end> <name_of_task>");
+    printf("\tCreates a timeslot for the date. time_start and time_end must be in military format\n");
+    puts("delete <time_start>");
+    printf("\tdeletes a timeslot from the given start time\n");
+    puts("save");
+    printf("\tSaves changes to the timeslot and returns to the main menu\n");
+}
+
+void print_make_schedule_help(void) {
+    print_edit_schedule_help();
+    puts("quit");
+    printf("\tReturns to the main menu without adding the currently worked date into the list of scheduled days\n");
 }

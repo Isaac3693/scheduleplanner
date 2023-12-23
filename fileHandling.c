@@ -25,27 +25,37 @@ import has txtExtension function from previous project.
 
 */
 
-//Enumeration for changing between the states of the fgets function
-enum string_parse_states {DATE, TIMESLOT, END};
+//Enumeration for changing between the states of the fgets function (UPDATE: I have moved the enum declaration at the scheduleStructs.h header file)
 
 
-//This functinos is supposed to update the list to make sure that it is up to date. We are modifying the list, and then we write to the file.
+//This function is supposed to update the list to make sure that it is up to date. We are modifying the list, and then we write to the file.
+//INT *TODAY IS GOING TO BE IN THE FORMAT {MONTH, DATE, YEAR}
 void update_file(char *path_name, size_t len, int *today, scheduled_days list) {
 
     //Iterate and delete each item from the list until you have reached today (if i->date >= today)
 
     if (list->main_head == NULL) return; //The list is achieved from scheduled_days_open_file, , and if the head is null, then there is nothing on the linked list.
 
-    else for (date i = list->main_head; i != NULL; i = i->next_day) {
-        //We check through the list to see if there are any days that have passed the current day
-        //TODO: FIGURE OUT THE LOGIC FLOW OF THE PROGRAM, FINISH WRITING THE FUNCTION AND MOVE ON TO WRITING THE MAIN PROGRAM (FINAL STRETCH)
+    //we are popping all items from the list such that these items came before today. We are going to implement a while loop by iterating the head
 
-        if (today[2] > i->year) {
+    while (list->main_head != NULL) {
+        if (list->main_head->year < today[2]) {
+            scheduled_days_pop_date_from_scheduled_days(list);
+        } else if (list->main_head->year == today[2]) {
+
+            if (list->main_head->month < today[0]) scheduled_days_pop_date_from_scheduled_days(list);
+            else if (list->main_head->month == today[0]) {
+
+                if (list->main_head->day < today[1]) scheduled_days_pop_date_from_scheduled_days(list);
+                else break;
             
-        } else if (today[2] == i->year) {
-            //Further check to see if the month or day are the same.
-        } else break; //All subsequent dates that come after the list must also come later than today, so we don't modify the list any more and stop the iteration.
+            } else break;
+        } else break; //The year comes after today, so we don't pop it off the list.  
     }
+
+    //After we have popped every single preceding day before today, we then write to the file for some changes
+    if (write_file(path_name, len, list)) printf("Check file for correct format\n");
+    return;
 
 }
 
@@ -67,9 +77,9 @@ int write_file(char *path_name, size_t path_len, scheduled_days list) {
         for (timeslot j = i->head; j != NULL; j = j->next_timeslot) {
             //check if both the min start and min end are less than 10 (i.e, they need a leading zero to still take two characters.)
             if ((j->min_start < 10) && (j->min_end < 10)) fprintf(fp, "%d:0%d-%d:0%d:%s\n", j->hour_start, j->min_start, j->hour_end, j->min_end, j->task_name);
-            else if (j->min_start < 10) fprintf(fp, "%d:0%d-%d:%d:%s\n", j->hour_start, j->min_start, j->hour_end, j->min_end);
-            else if (j->min_end < 10) fprintf(fp, "%d:%d-%d:0%d:%s\n", j->hour_start, j->min_start, j->hour_end, j->min_end);
-            else fprintf(fp, "%d:%d-%d:0%d:%s\n", j->hour_start, j->min_start, j->hour_end, j->min_end);
+            else if (j->min_start < 10) fprintf(fp, "%d:0%d-%d:%d:%s\n", j->hour_start, j->min_start, j->hour_end, j->min_end, j->task_name);
+            else if (j->min_end < 10) fprintf(fp, "%d:%d-%d:0%d:%s\n", j->hour_start, j->min_start, j->hour_end, j->min_end, j->task_name);
+            else fprintf(fp, "%d:%d-%d:0%d:%s\n", j->hour_start, j->min_start, j->hour_end, j->min_end, j->task_name);
         }
 
         fprintf(fp, "::END:: \n");
@@ -114,7 +124,6 @@ scheduled_days scheduled_days_open_file(char *path_name, size_t path_len) {
     //Scenario 2: the filename does exist and so we can read the file (CONSIDER SITUATION IN WHICH THE FILE IS EMPTY)
     
 
-    puts("aondoans");
     char content[BUFFER_SIZE];
     char other_content[32]; //This is use the strnpy function to an anonymous string
     int anticipated_dates = 0;
@@ -137,7 +146,7 @@ scheduled_days scheduled_days_open_file(char *path_name, size_t path_len) {
 
     if ((fp = freopen(path_name, "r", fp)) == NULL) {
         puts("FREOPEN FAILURE");
-        exit(1); //TODO:I don't know what to put here
+        exit(1); 
     }
 
     //The question: how can I make sure that ggets doesn't skip a single line in the file?

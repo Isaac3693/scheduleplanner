@@ -8,6 +8,7 @@
 #include <time.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdbool.h>
 #include "args.h" //Make sure to see for any overwritten macros (check header guards to make sure nothing gets changed.)
 
 #define PRINT_DASHES printf("---------------------------------------------------------------\n")
@@ -22,6 +23,9 @@
  * 
  * 
 **************************************************************************/
+
+enum string_parse_states {DATE, TIMESLOT, END};
+
 
 typedef struct timeslot_struct {
     int hour_start;
@@ -60,7 +64,7 @@ scheduled_days scheduled_days_create_scheduled_days(void);
 void scheduled_days_destroy_scheduled_days(scheduled_days);
 int scheduled_days_append_date_to_scheduled_days(scheduled_days, date);
 date scheduled_days_peek_date(scheduled_days, int, int, int);
-date scheduled_days_pop_date_from_scheduled_days(scheduled_days);
+void scheduled_days_pop_date_from_scheduled_days(scheduled_days);
 int scheduled_days_delete_day_from_scheduled_days(scheduled_days, int, int, int);
 void scheduled_days_print_entire_list(scheduled_days);
 
@@ -68,9 +72,8 @@ void scheduled_days_print_entire_list(scheduled_days);
 scheduled_days scheduled_days_open_file(char*, size_t);
 timeslot timeslot_parse_string_return_timeslot(char*, size_t);
 date date_parse_string_return_date(char*, size_t);
-
-
-//Miscellaneous functions
+int write_file(char*, size_t, scheduled_days);
+void update_file(char*, size_t, int*, scheduled_days);
 int hasTxtExtension(char*);
 
 

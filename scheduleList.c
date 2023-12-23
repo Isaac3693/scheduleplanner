@@ -36,13 +36,14 @@ date scheduled_days_peek_date(scheduled_days list, int day, int month, int year)
     return NULL;
 }
 
-date scheduled_days_pop_date_from_scheduled_days(scheduled_days list) {
+
+void scheduled_days_pop_date_from_scheduled_days(scheduled_days list) {
     //IF CALLING THIS FUNCTION, MAKE SURE TO CHECK ITS RETURN VALUE
     //ALSO CHECK THE VALUE OF THE SCHEDULE LIST MAIN HEAD AFTER CALLING THIS FUNCTION.
-    if (list->main_head == NULL) return NULL;
+    if (list->main_head == NULL) return;
     date tmp = list->main_head;
     list->main_head = list->main_head->next_day;
-    return tmp;
+    return;
 }
 
 scheduled_days scheduled_days_create_scheduled_days(void) {

@@ -32,3 +32,10 @@ December 20th notes: Debugging the program
     ANY ONE WORD INPUT: breaks
 
 December 21st Notes: Started writing the user interface for the program as well as the control flow
+
+December 24th Notes: Started writing the main program. Will need to debug this shit for the rest of the week.
+  -Finished, but didn't compile on the first try. Fixed a lot of issues though.DEBUGGING ISSUES:
+  ()schedule 12/25/2023 on the day 12/23/2023 but program said that the date has already passed
+  attempted to make a timeslot from 16:00 to 17:30 named 'breakfast & meditation' but was unable to make times from given input
+  no help command on make schedule. I presume it also applies to edit schedule
+  making a schedule on any day after today puts an error. Scheduling any day before today including today itself is fine
