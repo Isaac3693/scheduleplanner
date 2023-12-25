@@ -13,7 +13,7 @@ timeslot timeslot_create_timeslot(int hour_start, int min_start, int hour_end, i
         return NULL;
     } 
     //If the user has inputted some weird numbers.
-    else if ((hour_end < hour_start) || (hour_end == hour_start && (min_end - min_start <= 0))) {printf("Unable to make timeslot, no time interval in between\n"); return NULL;}
+    else if ((hour_end < hour_start) || (hour_end == hour_start && (min_end < min_start))) {printf("Unable to make timeslot, no time interval in between\n"); return NULL;}
     else if ((hour_start < 0 || hour_start > 23) || (min_start < 0 || min_start > 59)) {printf("Unable to make timeslot, time inputs inappropriate\n"); return NULL;}
 
     timeslot tmp;
@@ -51,6 +51,9 @@ int date_append_timeslot_to_date(date existing_date, timeslot slot) {
      * 
      * 
     *************************************/
+
+   //The main reason as to why I get a shit load of segmentation faults: I don't check whether timeslot is NULL.
+   if (slot == NULL) return 1;
 
     //Scenario 1: list is empty
     if (existing_date->head == NULL) {existing_date->head = slot; return 0;}
@@ -220,7 +223,7 @@ void date_print_date(date schedule) {
     if (schedule->head == NULL) {printf("Date is empty\n"); return;}
 
     PRINT_DASHES;
-    printf("Current date: %d/%d/%d\n", schedule->month, schedule->day, schedule->year);
+    printf("Selected date: %d/%d/%d\n", schedule->month, schedule->day, schedule->year);
     puts(" ");
     for (timeslot i = schedule->head; i != NULL; i = i->next_timeslot) {
         //Print the contents of each individual timeslot like (9:20 - 14:23: eat ass)

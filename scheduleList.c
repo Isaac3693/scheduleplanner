@@ -20,10 +20,34 @@ int scheduled_days_delete_day_from_scheduled_days(scheduled_days list, int day, 
         return 1;
     }
 
+    date tmp;
+
+    //december 25th 2023: I didn't even finish writing this function wtf.
+
     //Check if the head is equal to the search
-    if (year == list->main_head->year && month == list->main_head->month && day == list->main_head->day) {
-        if (list->main_head->next_day == NULL) {date_destroy_date(list->main_head); list->main_head == NULL; return 0;}
+
+    if (list->main_head->day == day && list->main_head->month == month && list->main_head->year == year) {
+        tmp = list->main_head;
+        list->main_head = list->main_head->next_day;
+        date_destroy_date(tmp);
+        puts("Date deleted");
+        return 0;
     }
+
+    //Iterate through the loop
+
+    for (tmp = list->main_head; tmp->next_day != NULL; tmp = tmp->next_day) if (tmp->next_day->day == day && tmp->next_day->month == month && tmp->next_day->year == year) {
+        date previous_day = tmp;
+        tmp = tmp->next_day;
+        previous_day->next_day = tmp->next_day;
+        date_destroy_date(tmp);
+        puts("Date deleted");
+        return 0;
+    }
+
+
+    puts("Date not found\n");
+    return 1; //Was unable to find the slot for the date
 }
 
 //returns the date that has the contents of the specified month, day, and year. Once again, CHECK THE CONTENTS OF THE RETURN VALUE  

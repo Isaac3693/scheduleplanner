@@ -73,7 +73,7 @@ scheduled_days scheduled_days_open_file(char*, size_t);
 timeslot timeslot_parse_string_return_timeslot(char*, size_t);
 date date_parse_string_return_date(char*, size_t);
 int write_file(char*, size_t, scheduled_days);
-void update_file(char*, size_t, int*, scheduled_days);
+void update_file(char*, size_t, int*, scheduled_days, bool*);
 int hasTxtExtension(char*);
 
 

@@ -88,8 +88,13 @@ int make_schedule(scheduled_days list, int *day) {
             else if (((time_start = parse_input_return_time(timeslot_args->argv[1], strlen(timeslot_args->argv[1]))) == NULL) || ((time_end = parse_input_return_time(timeslot_args->argv[2], strlen(timeslot_args->argv[2]))) == NULL)) printf("Unable to make times from given input\n");
 
             //Normal execution, everything is normal and we can append the timeslot to the list.
-            else if (!date_append_timeslot_to_date(current_date, timeslot_create_timeslot(time_start[0], time_start[1], time_end[0], time_end[1], timeslot_args->argv[3], strlen(timeslot_args->argv[3])))) printf("Timeslot added\n");
-
+            //Issue: we are just making the function without actually checking the value of the timeslot
+            //else if (!date_append_timeslot_to_date(current_date, timeslot_create_timeslot(time_start[0], time_start[1], time_end[0], time_end[1], timeslot_args->argv[3], strlen(timeslot_args->argv[3])))) printf("Timeslot added\n");
+            else {
+                timeslot tmp;
+                if ((tmp = timeslot_create_timeslot(time_start[0], time_start[1], time_end[0], time_end[1], timeslot_args->argv[3], strlen(timeslot_args->argv[3]))) != NULL) {date_append_timeslot_to_date(current_date, tmp);puts("timeslot added");}
+                else puts("timeslot add failure");
+            }
         }
 
         //User wants to delete a timeslot from the date
@@ -107,6 +112,8 @@ int make_schedule(scheduled_days list, int *day) {
 
         else if (!strcmp(timeslot_args->argv[0], "print")) date_print_date(current_date);
 
+        //User wants to print help on the screen
+        else if(!strcmp(timeslot_args->argv[0], "help")) print_edit_or_make_schedule_help(true);
 
         else printf("Unknown command\n");
 
@@ -157,11 +164,16 @@ int edit_schedule(scheduled_days list, date current_date) {
             if (timeslot_args->argc != 4) {printf("insufficient arguments\n");}
 
             //Super duper long statements make my day
+            //Midnight update on this function: this dragonfucking statement is cursed as fuck. IT DOES SOME WEIRD SHIT (I should more appropriately say, I am telling it to do something entirely different.) What the fuck am I telling this thing to do?
             else if (((time_start = parse_input_return_time(timeslot_args->argv[1], strlen(timeslot_args->argv[1]))) == NULL) || ((time_end = parse_input_return_time(timeslot_args->argv[2], strlen(timeslot_args->argv[2]))) == NULL)) printf("Unable to make times from given input\n");
 
             //Normal execution, everything is normal and we can append the timeslot to the list.
-            else if (!date_append_timeslot_to_date(current_date, timeslot_create_timeslot(time_start[0], time_start[1], time_end[0], time_end[1], timeslot_args->argv[3], strlen(timeslot_args->argv[3])))) printf("Timeslot added\n");
-
+            //old code that was used. DELETE THIS AFTER REALIZING THAT THE NEW CODE WORKED BEFORE PUSHING THIS TO THE MAIN REPOSITORY
+            else {
+                timeslot tmp; 
+                if ((tmp = timeslot_create_timeslot(time_start[0], time_start[1], time_end[0], time_end[1], timeslot_args->argv[3], strlen(timeslot_args->argv[3]))) != NULL) {date_append_timeslot_to_date(current_date, tmp); puts("timeslot added");}
+                else puts("timeslot add faiure");
+            }
         }
 
         //User wants to delete a timeslot from the date
@@ -179,6 +191,9 @@ int edit_schedule(scheduled_days list, date current_date) {
 
         else if (!strcmp(timeslot_args->argv[0], "print")) date_print_date(current_date);
 
+        //User wants to print help because they don't know what they are doing
+        else if(!strcmp(timeslot_args->argv[0], "help")) print_edit_or_make_schedule_help(false);
+
         else printf("Unknown command\n");
 
         destroy_args(timeslot_args);
@@ -194,16 +209,17 @@ int edit_schedule(scheduled_days list, date current_date) {
 
 }
 
-//Issue, there is a problem with checking the content of strncpy, we have to assume that the user is not stupid enough to put the right info
-//TODO: TEST THIS PROGRAM AND OBSERVE BEHAVIOUR IN CASE THE USER PUTS THE WRONG FORMAT FOR THE TIME.
 int *parse_input_return_time(char *input, size_t len) {
-    //Most often has the input --:-- (wait, it's that easy?)
+    //Most often has the input --:-- (wait, it's that easy?) (12/24/2023 update: no, apparently it is not)
 
     int *time_arr;
     if ((time_arr = (int*)malloc(sizeof(int) * 2)) == NULL) return NULL;
-    char copier[MAX_NAME_LENGTH];
+    char copier[MAX_NAME_LENGTH]; 
+    //Apparently using the classic scenario of the time "8:00" and "8:20" copier in the second 
+    //iteration being called in the make_schedule function is initialized with "00\0", meaning that if only the first character is strncopied, the second 0 in the string isn't removed and so parsing 8:20 in the end makes time_arr[0] be 80...
     for (int i = 0; i < len; i++) if (input[i] == ':') {
-
+        
+        copier[i] = '\0'; //will this solve my problem? 
         time_arr[0] = atoi(strncpy(copier, input, i));
         time_arr[1] = atoi(strcpy(copier, (input + i + 1)));
 
@@ -216,7 +232,7 @@ int *parse_input_return_time(char *input, size_t len) {
 }
 
 bool has_correct_time_format(int *time_arr) {
-    return ((time_arr[0] > 0) && (time_arr[0] < 24) && (time_arr[1] > 0) && (time_arr[1] < 60));
+    return ((time_arr[0] >= 0) && (time_arr[0] < 24) && (time_arr[1] >= 0) && (time_arr[1] < 60));
 }
 
 //Fortunately for the user, nothing is stopping them from scheduling a day that is in the year INT_MAX, meaning that if they live for an extremely long time (assuming we can now put our brains in immortal mechanical machines, which is highly unprobabilistic), they can make a time capsule in the form of a schedule...
@@ -242,15 +258,17 @@ int *parse_input_return_date(char *input, size_t len) {
         if (input[i] == '/') {
             slash_counter++;
             switch (slash_counter) {
-                case(1):
+                case(1): {
                     date_arr[0] = atoi(strncpy(copier, input, i));
                     break;
-                case(2):
+                }
+                case(2): {
                     date_arr[1] = atoi(strncpy(copier, (input + previous_slash_index + 1), i - (previous_slash_index - 1)));
                     previous_slash_index = i;
                     date_arr[2] = atoi(strcpy(copier, (input + i + 1)));
                     if (!has_correct_date_format(date_arr)) {free(date_arr); return NULL;}
                     return date_arr;
+                }   
             }
 
             previous_slash_index = i; //In case that the iteration has reached the second slash to make the second switch case work
@@ -309,10 +327,11 @@ void print_help(void) {
     puts("print <date (optional)>");
     printf("\tPrints a selected date to see the contents. If <date> is omitted, by default prints the schedule for today if it exists\n");
     puts("quit");
-    printf("exits the program\n");
+    printf("\texits the program\n");
+    PRINT_DASHES;
 }
 
-void print_edit_schedule_help(void) {
+void print_edit_or_make_schedule_help(bool printing_for_make_schedule) {
     PRINT_DASHES;
     puts("print");
     printf("\tprints the schedule for the date\n");
@@ -322,10 +341,11 @@ void print_edit_schedule_help(void) {
     printf("\tdeletes a timeslot from the given start time\n");
     puts("save");
     printf("\tSaves changes to the timeslot and returns to the main menu\n");
+
+    if (printing_for_make_schedule) {
+        puts("quit");
+        printf("\tReturns to the main menu without adding the currently worked date into the list of scheduled days\n");
+    }
+    PRINT_DASHES;
 }
 
-void print_make_schedule_help(void) {
-    print_edit_schedule_help();
-    puts("quit");
-    printf("\tReturns to the main menu without adding the currently worked date into the list of scheduled days\n");
-}

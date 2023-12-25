@@ -30,7 +30,7 @@ import has txtExtension function from previous project.
 
 //This function is supposed to update the list to make sure that it is up to date. We are modifying the list, and then we write to the file.
 //INT *TODAY IS GOING TO BE IN THE FORMAT {MONTH, DATE, YEAR}
-void update_file(char *path_name, size_t len, int *today, scheduled_days list) {
+void update_file(char *path_name, size_t len, int *today, scheduled_days list, bool *is_up_to_date) {
 
     //Iterate and delete each item from the list until you have reached today (if i->date >= today)
 
@@ -54,7 +54,9 @@ void update_file(char *path_name, size_t len, int *today, scheduled_days list) {
     }
 
     //After we have popped every single preceding day before today, we then write to the file for some changes
+    //We are not freeing the list because we are only passing it from the previous declaration (which should have been made in the openFile function). This is a reason as to why this is void
     if (write_file(path_name, len, list)) printf("Check file for correct format\n");
+    *is_up_to_date = true;
     return;
 
 }
@@ -79,10 +81,11 @@ int write_file(char *path_name, size_t path_len, scheduled_days list) {
             if ((j->min_start < 10) && (j->min_end < 10)) fprintf(fp, "%d:0%d-%d:0%d:%s\n", j->hour_start, j->min_start, j->hour_end, j->min_end, j->task_name);
             else if (j->min_start < 10) fprintf(fp, "%d:0%d-%d:%d:%s\n", j->hour_start, j->min_start, j->hour_end, j->min_end, j->task_name);
             else if (j->min_end < 10) fprintf(fp, "%d:%d-%d:0%d:%s\n", j->hour_start, j->min_start, j->hour_end, j->min_end, j->task_name);
-            else fprintf(fp, "%d:%d-%d:0%d:%s\n", j->hour_start, j->min_start, j->hour_end, j->min_end, j->task_name);
+            else fprintf(fp, "%d:%d-%d:%d:%s\n", j->hour_start, j->min_start, j->hour_end, j->min_end, j->task_name);
         }
 
-        fprintf(fp, "::END:: \n");
+        if (i->next_day == NULL) fprintf(fp, "::END:: "); //It was creating an issue such that the final ::END:: closer had a whitespace and it was making a timeslot using an empty string after the newline.
+        else fprintf(fp, "::END::\n");
     }
 
     fclose(fp);
@@ -125,19 +128,17 @@ scheduled_days scheduled_days_open_file(char *path_name, size_t path_len) {
     
 
     char content[BUFFER_SIZE];
-    char other_content[32]; //This is use the strnpy function to an anonymous string
+    char other_content[32]; //This is use the strnpy function to an anonymous string (IMPORTANT NOTE: does the pre-allocated array have null terminators in every element? It doesn't seem like the case in Linux)
     int anticipated_dates = 0;
     //Probably make a pre-read in which the file pointer checks if there are any dates within the list. 
     //This applies to a scenario in which the user creates a new file, quits the program, then enters again with the empty file
 
     while(fgets(content, BUFFER_SIZE, fp)) {
         content[strlen(content) - 1] = '\0';
-        printf("%s\n", content);
-        if (!strcmp(strncpy(other_content, content, strlen("DATE")), "DATE")) anticipated_dates++;
+        strncpy(other_content, content, 4); //We know that the string length of the string "date" (and uppercase version of it) is just 4.. Keep it like that.
+        other_content[4] = '\0';
+        if (!strcmp(other_content, "DATE")) anticipated_dates++;
     }
-
-    printf("anticipated dates is %d\n", anticipated_dates);
-
 
     //If its zero, then return an empty schedule_list
     if (anticipated_dates == 0) return list;
@@ -154,7 +155,6 @@ scheduled_days scheduled_days_open_file(char *path_name, size_t path_len) {
     date current_date_being_parsed;
 
     while (!feof(fp)) {
-        puts("sdoamw");
         fgets(content, BUFFER_SIZE, fp);
         content[strlen(content) - 1] = '\0';
         //Check the actual string
@@ -166,28 +166,30 @@ scheduled_days scheduled_days_open_file(char *path_name, size_t path_len) {
         //and if its a timeslot, parse the string and append the timeslot to the current date.
 
         switch (state) {
-            case (DATE):
+            case (DATE): {
                 if ((current_date_being_parsed = date_parse_string_return_date((content + 5), strlen((content + 5)))) == NULL) {
                     fprintf(stderr, "ERROR IN RETURNING DATE, RETURNING NULL LIST\n"); 
                     scheduled_days_destroy_scheduled_days(list);
                     return NULL;
                     }
                 break;
-            case (TIMESLOT):
+            }
+            case (TIMESLOT):{
                 if (date_append_timeslot_to_date(current_date_being_parsed, timeslot_parse_string_return_timeslot(content, strlen(content)))) {
                     fprintf(stderr, "ERROR IN APPENDING DATE, RETURNING NULL\n"); 
                     scheduled_days_destroy_scheduled_days(list);
                     return NULL;
                 }
                 break;
-            case (END):
+            }
+            case (END): {
                 if (scheduled_days_append_date_to_scheduled_days(list, current_date_being_parsed)) {
                     fprintf(stderr, "ERROR IN APPENDING DATE, RETURNING NULL\n"); 
                     scheduled_days_destroy_scheduled_days(list);
                     return NULL;               
                 }
                 break; //Not really necessary to add a break here? Or maybe add a default statement?
-
+            }
         }
 
     }
@@ -205,11 +207,16 @@ scheduled_days scheduled_days_open_file(char *path_name, size_t path_len) {
 //ASSUME CONTENT HAS A NULL TERMINATOR AT THE END
 //ALSO ASSUMES THAT THE NAME INSIDE OF THE STRING IS LESS THAN OR EQUAL TO 31 CHARACTERS
 //WE ONLY NEED ONE END STRING
+//TODO:there is something wrong with the implementation of this function. For example, one of the hours is putting out 82 for some bizarre reason. I ought to investigate this further because shit, I need to sleep.
 timeslot timeslot_parse_string_return_timeslot(char *content, size_t len) {
 
     //nn:oo-pp:qq:NAMEOFSOMETHING
     timeslot tmp;
     char time_numbers[4][3];
+    //For everytime that I initialize a string, I am literally going to declare all of its characters as null terminating characters 
+
+    for (int i = 0; i < 4; i++) for (int j = 0; j < 3; j++) time_numbers[i][j] = '\0';
+    
     char task_name[MAX_NAME_LENGTH];
     int index_of_dash = 0;
     int colon_counter = 0; //Counts amount of times the iteration passed through a colon
@@ -221,18 +228,20 @@ timeslot timeslot_parse_string_return_timeslot(char *content, size_t len) {
 
             //Should we add a default statement? 
             switch (colon_counter) {
-                case (1):
+                case (1): {
                     strncpy(time_numbers[0], content, i);
                     strncpy(time_numbers[1], (content + (i + 1)), 2);
                     break;
-                case (2):
+                }
+                case (2): {
                     strncpy(time_numbers[2], (content + (index_of_dash + 1)), i - (index_of_dash + 1));
                     strncpy(time_numbers[3], (content + (i + 1)), 2);
                     break;
-                case (3):
+                }
+                case (3): {
                     strcpy(task_name, (content + (i + 1)));
                     break;
-                
+                }
             }
         }
 
@@ -265,16 +274,17 @@ date date_parse_string_return_date(char *content, size_t len) {
             slash_counter++;
 
             switch (slash_counter) {
-                case (1):
+                case (1): {
                     date_arr[0] = atoi(strncpy(copier, content, i));
                     index_of_previous_dash = i;
                     break;
-                case (2):
+                }
+                case (2): {
                     date_arr[1] = atoi(strncpy(copier, (content + index_of_previous_dash + 1), i - (index_of_previous_dash + 1)));
                     index_of_previous_dash = i;
                     date_arr[2] = atoi(strcpy(copier, (content + (i + 1))));
                     break;
-                
+                }
             }
         }
 

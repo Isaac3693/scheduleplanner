@@ -41,9 +41,11 @@ int main(int argc, char *argv[]) {
         time_t t;
         int *current_date_array;
         int *user_inputted_date_array;
+        bool has_updated = false; //I need to keep the current_date array be continuously update in case for some reason I find myself making a schedule sometime in the midnight 
+        //TODO: Implement the updateFile() function in the main program
 
 
-        if ((user_list = scheduled_days_open_file(argv[1], strlen(argv[1]))) == NULL) {fprintf(stderr, "ERROR: USER LIST RETURNS NULL"); exit(1);}
+        if ((user_list = scheduled_days_open_file(argv[1], strlen(argv[1]))) == NULL) {fprintf(stderr, "ERROR: USER LIST RETURNS NULL\n"); exit(1);}
         printf("type 'help' for a comprehensive list of instructions\n");
 
 
@@ -52,6 +54,7 @@ int main(int argc, char *argv[]) {
             t = time(NULL);
             timestruct = localtime(&t);
             current_date_array = make_date_arr(timestruct);
+            if (!has_updated) update_file(argv[1], strlen(argv[1]), current_date_array, user_list, &has_updated);
 
             printf("(schedule planner)");
             fgets(user_input, BUFFER_SIZE, stdin);
@@ -73,13 +76,14 @@ int main(int argc, char *argv[]) {
                 //check if they have put the date or the 'today' special keyword in the argument. Prior to checking those values, make sure that argc equals 2
                 if (argc != 2) printf("Incorrect amount of arguments for 'schedule' command\n");
 
-                else if ((user_inputted_date_array = parse_input_return_date(user_arguments->argv[1], strlen(user_arguments->argv[1]))) == NULL) printf("Incorrect format for the date. Must be in month/day/year");
+                else if ((user_inputted_date_array = parse_input_return_date(user_arguments->argv[1], strlen(user_arguments->argv[1]))) == NULL) printf("Incorrect format for the date. Must be in month/day/year\n");
                 else {
                     //Normal execution of the make/edit schedule function. we will not allow for the user to put any day before today, Only today and 
                     //Normally, I would implement a switch checking the value of the enum but I feel like it would be more confusing to follow, so instead I implement another if else loop.
+                    //ISSUE FIX: PUTTING AN EQUALS SIGN MEANT THAT ALL DAYS THAT CAME AFTER TODAY WOULD NOT HAVE BEEN ABLE TO BE CREATED
                     enum date_comparison_state compare_today_with_user_inputted_date = current_date_comparison_with_selected_date(current_date_array, user_inputted_date_array);
 
-                    if (compare_today_with_user_inputted_date == BEFORE) printf("Date has already passed, enter another date\n");
+                    if (compare_today_with_user_inputted_date != BEFORE) printf("Date has already passed, enter another date\n");
 
                     else {
                         //use the peek date to retrieve the date of a list.
@@ -118,7 +122,8 @@ int main(int argc, char *argv[]) {
                     if ((selected_date = scheduled_days_peek_date(user_list, current_date_array[1], current_date_array[0], current_date_array[2])) == NULL) printf("No schedule for today\n");
                     else date_print_date(selected_date);
                 } else if (user_arguments->argc == 2) {
-                    if ((user_inputted_date_array = parse_input_return_date(user_arguments->argv[1], strlen(user_arguments->argv[1]))) == NULL) printf("Incorrect format for the date. Must be in month/day/year");
+                    if (!strcmp(user_arguments->argv[1], "all")) scheduled_days_print_entire_list(user_list); //Print the entire list
+                    else if ((user_inputted_date_array = parse_input_return_date(user_arguments->argv[1], strlen(user_arguments->argv[1]))) == NULL) printf("Incorrect format for the date. Must be in month/day/year");
                     else {
                         if ((selected_date = scheduled_days_peek_date(user_list, user_inputted_date_array[1], user_inputted_date_array[0], user_inputted_date_array[2])) == NULL) printf("No schedule for selected date\n");
                         else {date_print_date(selected_date); free(user_inputted_date_array);}
@@ -126,7 +131,12 @@ int main(int argc, char *argv[]) {
                 } else printf("Incorrect amount of arguments for 'print' command\n");
             }
 
+            //User wants to clear the screen
+            else if (!strcmp(user_arguments->argv[0], "clear")) system("clear"); //I did not know that I could call commands from the bash lmao
+
             else if (!strcmp(user_arguments->argv[0], "quit")) {printf("Exiting program\n"); exit(0);}
+
+            else printf("Unknown command\n");
 
 
 
