@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
                     //ISSUE FIX: PUTTING AN EQUALS SIGN MEANT THAT ALL DAYS THAT CAME AFTER TODAY WOULD NOT HAVE BEEN ABLE TO BE CREATED
                     enum date_comparison_state compare_today_with_user_inputted_date = current_date_comparison_with_selected_date(current_date_array, user_inputted_date_array);
 
-                    if (compare_today_with_user_inputted_date != BEFORE) printf("Date has already passed, enter another date\n");
+                    if (compare_today_with_user_inputted_date == AFTER) printf("Date has already passed, enter another date\n");
 
                     else {
                         //use the peek date to retrieve the date of a list.

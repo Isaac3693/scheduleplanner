@@ -58,7 +58,7 @@ int make_schedule(scheduled_days list, int *day) {
         printf("(Create Schedule for %d/%d/%d)", day[0], day[1], day[2]);
         fgets(user_input, BUFFER_SIZE, stdin);
         user_input[strlen(user_input) - 1] - '\0';
-        if ((timeslot_args = c_arg(user_input, strlen(user_input))) == NULL) {printf("Incorrect arg format\n"); destroy_args(timeslot_args); continue;}
+        if ((timeslot_args = c_arg(user_input, strlen(user_input))) == NULL) {printf("Incorrect arg format\n"); continue;}
 
         //Now do a continuous if else loop that takes into account of the many things the user wants to do
 
@@ -144,7 +144,7 @@ int edit_schedule(scheduled_days list, date current_date) {
         printf("(Edit Schedule for %d/%d/%d)", current_date->month, current_date->day, current_date->year);
         fgets(user_input, BUFFER_SIZE, stdin);
         user_input[strlen(user_input) - 1] - '\0';
-        if ((timeslot_args = c_arg(user_input, strlen(user_input))) == NULL) {printf("Incorrect arg format\n"); destroy_args(timeslot_args); continue;}
+        if ((timeslot_args = c_arg(user_input, strlen(user_input))) == NULL) {printf("Incorrect arg format\n");continue;}
 
         //Now do a continuous if else loop that takes into account of the many things the user wants to do
 

@@ -157,7 +157,14 @@ int date_delete_timeslot_from_date(int starting_hour, int starting_minute, date 
     if (schedule->head == NULL) {printf("No timeslots in schedule\n"); return 0;}
 
     if ((schedule->head->hour_start == starting_hour) && (schedule->head->min_start == starting_minute)) {
-        //free the memory, then assign the head to NULL just in case
+
+        if (schedule->head->next_timeslot != NULL) {
+            timeslot tmp = schedule->head;
+            schedule->head = schedule->head->next_timeslot;
+            timeslot_destroy_timeslot(tmp);
+            return 0;
+        }
+        //free the memory, then assign the head to NULL just in case (in case it is the only one in the list)
         timeslot_destroy_timeslot(schedule->head);
         schedule->head = NULL;
         return 0;
